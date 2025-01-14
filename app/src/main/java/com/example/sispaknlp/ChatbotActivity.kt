@@ -1,6 +1,7 @@
 package com.example.sispaknlp
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -17,6 +18,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sispaknlp.model.ChatMessage
 import com.example.sispaknlp.model.ChatbotResponse
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -31,6 +34,8 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
     private lateinit var voiceButton: Button
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textToSpeech: TextToSpeech
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var clearButton: Button
 
     private val SPEECH_REQUEST_CODE = 100 // Define the request code for speech recognition
 
@@ -38,18 +43,31 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chatbot)
 
+        // Initialize SharedPreferences for storing chat data
+        sharedPreferences = getSharedPreferences("ChatPrefs", MODE_PRIVATE)
+
         sendButton = findViewById(R.id.sendButton)
         recyclerView = findViewById(R.id.recyclerView)
         messageInput = findViewById(R.id.messageInput)
         voiceButton = findViewById(R.id.voiceButton)
+        clearButton = findViewById(R.id.clearButton)
 
         textToSpeech = TextToSpeech(this, this)
 
         chatAdapter = ChatAdapter(chatList)
 
+        // Action untuk tombol Clear
+        clearButton.setOnClickListener {
+            chatAdapter.clearMessages() // Menghapus seluruh pesan
+            sharedPreferences.edit().clear().apply() // Menghapus data chat di SharedPreferences
+        }
+
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = chatAdapter
+
+        // Load previous chat messages
+        loadChatMessages()
 
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
@@ -98,6 +116,9 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
 
                 setButtonLoading(true)
 
+                // Save the user message to SharedPreferences
+                saveChatMessages()
+
                 getChatbotResponse(userMessage) { response ->
                     chatList.add(ChatMessage(response, false))
 
@@ -107,6 +128,9 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
 
                     // Mengubah respons chatbot menjadi suara
                     speakText(response)
+
+                    // Save the chatbot response to SharedPreferences
+                    saveChatMessages()
 
                     setButtonLoading(false)
                 }
@@ -205,5 +229,25 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
         } else {
             Log.e("TTS", "Language not supported!")
         }
+    }
+
+    // Save the chat messages to SharedPreferences
+    private fun saveChatMessages() {
+        val editor = sharedPreferences.edit()
+        val chatJson = Gson().toJson(chatList) // Convert chat list to JSON
+        editor.putString("chatMessages", chatJson)
+        editor.apply()
+    }
+
+    // Load the chat messages from SharedPreferences
+    private fun loadChatMessages() {
+        val chatJson = sharedPreferences.getString("chatMessages", "[]")
+        val chatType = object : TypeToken<List<ChatMessage>>() {}.type
+        val chatListFromPrefs: List<ChatMessage> = Gson().fromJson(chatJson, chatType)
+
+        chatList.clear()
+        chatList.addAll(chatListFromPrefs)
+
+        chatAdapter.notifyDataSetChanged()
     }
 }
