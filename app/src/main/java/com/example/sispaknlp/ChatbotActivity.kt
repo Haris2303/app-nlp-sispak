@@ -6,6 +6,8 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.SpeechRecognizer.RESULTS_RECOGNITION
+import android.speech.tts.TextToSpeech
+import android.speech.tts.TextToSpeech.OnInitListener
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
@@ -18,8 +20,9 @@ import com.example.sispaknlp.model.ChatbotResponse
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.Locale
 
-class ChatbotActivity : AppCompatActivity() {
+class ChatbotActivity : AppCompatActivity(), OnInitListener {
     private val chatList = mutableListOf<ChatMessage>()
     private lateinit var chatAdapter: ChatAdapter
     private lateinit var sendButton: Button
@@ -27,6 +30,7 @@ class ChatbotActivity : AppCompatActivity() {
     private lateinit var messageInput: EditText
     private lateinit var voiceButton: Button
     private lateinit var speechRecognizer: SpeechRecognizer
+    private lateinit var textToSpeech: TextToSpeech
 
     private val SPEECH_REQUEST_CODE = 100 // Define the request code for speech recognition
 
@@ -38,6 +42,8 @@ class ChatbotActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         messageInput = findViewById(R.id.messageInput)
         voiceButton = findViewById(R.id.voiceButton)
+
+        textToSpeech = TextToSpeech(this, this)
 
         chatAdapter = ChatAdapter(chatList)
 
@@ -99,10 +105,14 @@ class ChatbotActivity : AppCompatActivity() {
                     recyclerView.scrollToPosition(chatList.size - 1)
                     messageInput.text.clear()
 
+                    // Mengubah respons chatbot menjadi suara
+                    speakText(response)
+
                     setButtonLoading(false)
                 }
             }
         }
+
     }
 
     private fun getChatbotResponse(message: String, callback: (String) -> Unit) {
@@ -155,6 +165,45 @@ class ChatbotActivity : AppCompatActivity() {
 
             // Set the recognized text to the EditText field
             messageInput.setText(spokenText)
+        }
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            val langResult = textToSpeech.setLanguage(Locale("id", "ID"))
+            Log.i("Language_Result", "Result: $langResult")
+
+            // Menangani berbagai kemungkinan hasil
+            when (langResult) {
+                TextToSpeech.LANG_AVAILABLE -> {
+                    Log.d("TTS", "Bahasa Indonesia tersedia dan siap digunakan.")
+                }
+                TextToSpeech.LANG_MISSING_DATA -> {
+                    Log.e("TTS", "Data bahasa Indonesia hilang.")
+                    Toast.makeText(this, "Data bahasa Indonesia hilang, silakan unduh data TTS.", Toast.LENGTH_LONG).show()
+                }
+                TextToSpeech.LANG_NOT_SUPPORTED -> {
+                    Log.e("TTS", "Bahasa Indonesia tidak didukung.")
+                    Toast.makeText(this, "Bahasa Indonesia tidak didukung.", Toast.LENGTH_LONG).show()
+                }
+                else -> {
+                    Log.e("TTS", "Status bahasa tidak diketahui atau error.")
+                }
+            }
+        } else {
+            Log.e("TTS", "Inisialisasi TTS gagal!")
+            Toast.makeText(this, "Inisialisasi TTS gagal.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Fungsi untuk mengubah respons chatbot menjadi suara
+    private fun speakText(text: String) {
+        Log.i("IS_LANGUANGE_TTS", "Result: ${textToSpeech.isLanguageAvailable(Locale("id", "ID"))} ----- Lang Available: ${TextToSpeech.LANG_AVAILABLE}")
+        if (textToSpeech.isLanguageAvailable(Locale("id", "ID")) == 1) {
+            textToSpeech.language = Locale("id", "ID") // Bahasa Indonesia
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        } else {
+            Log.e("TTS", "Language not supported!")
         }
     }
 }

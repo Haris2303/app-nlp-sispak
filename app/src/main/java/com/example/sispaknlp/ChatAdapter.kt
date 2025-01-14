@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sispaknlp.model.ChatMessage
 
-class ChatAdapter(private val chatList: List<ChatMessage>): RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
+class ChatAdapter(private val chatList: MutableList<ChatMessage>): RecyclerView.Adapter<ChatAdapter.ChatViewHolder>() {
 
     inner class ChatViewHolder(itemView: View): RecyclerView.ViewHolder(itemView) {
         val userMessage: TextView = itemView.findViewById(R.id.userMessage)
@@ -34,5 +34,11 @@ class ChatAdapter(private val chatList: List<ChatMessage>): RecyclerView.Adapter
             holder.botMessage.visibility = View.VISIBLE
             holder.userMessage.visibility = View.GONE
         }
+    }
+
+    // Fungsi untuk menghapus seluruh pesan
+    fun clearMessages() {
+        chatList.clear() // Menghapus semua pesan dalam chatList
+        notifyDataSetChanged() // Memberi tahu adapter untuk memperbarui RecyclerView
     }
 }
