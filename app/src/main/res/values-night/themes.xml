@@ -1,7 +1,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.SispakNLP" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.SispakNLP" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+            <item name="colorPrimary">@color/primary</item>
+            <!-- Warna primary dark -->
+            <item name="colorPrimaryDark">@color/primary</item>
+            <!-- Color text and icon -->
+            <item name="colorOnPrimary">@color/secondary</item>
+
+            <!-- Nonactive default actionbar -->
+            <item name="windowActionBar">false</item>
+            <!-- Remove default title -->
+            <item name="windowNoTitle">true</item>
     </style>
 </resources>

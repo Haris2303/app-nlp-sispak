@@ -1,53 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="@color/black">
 
-    <!-- RecyclerView untuk menampilkan pesan -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp" />
-
-    <!-- Input pesan -->
+    <!-- Konten Utama -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/messageInput"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+        <!-- Toolbar -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:elevation="4dp"
+            app:titleTextColor="@color/white" />
+
+        <!-- RecyclerView untuk menampilkan pesan -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:hint="Ketik pesan..."
-            android:padding="8dp"
-            android:background="@android:drawable/editbox_background" />
+            android:padding="8dp" />
 
-        <Button
-            android:id="@+id/voiceButton"
-            android:layout_width="wrap_content"
+        <!-- Input pesan -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🎤"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="16dp"/>
+            android:orientation="horizontal"
+            android:padding="8dp">
 
-        <!-- Button untuk clear pesan -->
-        <Button
-            android:id="@+id/clearButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Clear" />
+            <ImageButton
+                android:id="@+id/voiceButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/baseline_keyboard_voice_24"
+                android:drawableTint="@drawable/baseline_keyboard_voice_24"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/bg_rounded_voice"
+                android:padding="12dp"/>
 
-        <Button
-            android:id="@+id/sendButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Kirim" />
+            <EditText
+                android:id="@+id/messageInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="Masukkan teks"
+                android:layout_weight="1"
+                android:drawablePadding="8dp"
+                android:padding="12dp"
+                android:background="@drawable/edittext_background"
+                android:inputType="text" />
+
+            <Button
+                android:id="@+id/sendButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kirim"
+                android:background="@drawable/bg_rounded_voice"
+                android:padding="10dp"
+                android:layout_marginStart="5dp"
+                android:textColor="@color/white"/>
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+
+<!--    Sidebar <NavigationView-->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/drawer_menu"
+        app:headerLayout="@layout/nav_header"
+        />
+
+</androidx.drawerlayout.widget.DrawerLayout>

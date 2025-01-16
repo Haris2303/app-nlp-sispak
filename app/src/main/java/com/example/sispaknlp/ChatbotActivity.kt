@@ -1,5 +1,6 @@
 package com.example.sispaknlp
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -10,14 +11,24 @@ import android.speech.SpeechRecognizer.RESULTS_RECOGNITION
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
+import android.view.MotionEvent
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Toast
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.menu.MenuView.ItemView
+import androidx.appcompat.widget.Toolbar
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sispaknlp.model.ChatMessage
 import com.example.sispaknlp.model.ChatbotResponse
+import com.google.android.material.navigation.NavigationView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import retrofit2.Call
@@ -25,17 +36,20 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.Locale
 
-class ChatbotActivity : AppCompatActivity(), OnInitListener {
+class ChatbotActivity : AppCompatActivity(), OnInitListener, NavigationView.OnNavigationItemSelectedListener {
     private val chatList = mutableListOf<ChatMessage>()
     private lateinit var chatAdapter: ChatAdapter
     private lateinit var sendButton: Button
     private lateinit var recyclerView: RecyclerView
     private lateinit var messageInput: EditText
-    private lateinit var voiceButton: Button
+    private lateinit var voiceButton: ImageButton
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var clearButton: Button
+    private lateinit var clearButton: MenuItem
+    private lateinit var drawer_layout: DrawerLayout
+    private lateinit var toolbar: Toolbar
+    private lateinit var nav_view: NavigationView
 
     private val SPEECH_REQUEST_CODE = 100 // Define the request code for speech recognition
 
@@ -50,17 +64,30 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
         recyclerView = findViewById(R.id.recyclerView)
         messageInput = findViewById(R.id.messageInput)
         voiceButton = findViewById(R.id.voiceButton)
-        clearButton = findViewById(R.id.clearButton)
+        drawer_layout = findViewById(R.id.drawer_layout)
+        toolbar = findViewById(R.id.toolbar)
+        nav_view = findViewById(R.id.nav_view)
+
+        // Set Navigation Listener
+        nav_view.setNavigationItemSelectedListener(this)
+
+        // Setup Toolbar
+        setSupportActionBar(toolbar)
+
+        // Setup Drawer
+        val toggle = ActionBarDrawerToggle(
+            this,
+            drawer_layout,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawer_layout.addDrawerListener(toggle)
+        toggle.syncState()
 
         textToSpeech = TextToSpeech(this, this)
 
-        chatAdapter = ChatAdapter(chatList)
-
-        // Action untuk tombol Clear
-        clearButton.setOnClickListener {
-            chatAdapter.clearMessages() // Menghapus seluruh pesan
-            sharedPreferences.edit().clear().apply() // Menghapus data chat di SharedPreferences
-        }
+        chatAdapter = ChatAdapter(this, chatList)
 
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -68,40 +95,6 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
 
         // Load previous chat messages
         loadChatMessages()
-
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-        speechRecognizer.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {
-                Log.d("SPEECH", "Ready for speech")
-            }
-
-            override fun onBeginningOfSpeech() {
-                Log.d("SPEECH", "Beginning of speech")
-            }
-
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {
-                Log.d("SPEECH", "End of speech")
-            }
-
-            override fun onError(error: Int) {
-                Log.e("SPEECH_ERROR", "Error: $error")
-                Toast.makeText(applicationContext, "Error recognizing speech", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onResults(results: Bundle?) {
-                val data = results?.getStringArrayList(RESULTS_RECOGNITION)
-                val spokenText = data?.get(0) ?: ""
-                Log.d("SPEECH_RESULT", "Spoken text: $spokenText")
-
-                // Set the recognized text to the EditText field
-                messageInput.setText(spokenText)
-            }
-
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
 
         voiceButton.setOnClickListener {
             // Start speech recognition
@@ -119,15 +112,18 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
                 // Save the user message to SharedPreferences
                 saveChatMessages()
 
+                chatAdapter.notifyDataSetChanged()
+
                 getChatbotResponse(userMessage) { response ->
                     chatList.add(ChatMessage(response, false))
 
-                    chatAdapter.notifyDataSetChanged()
                     recyclerView.scrollToPosition(chatList.size - 1)
                     messageInput.text.clear()
 
-                    // Mengubah respons chatbot menjadi suara
-                    speakText(response)
+//                    btnTTS.setOnClickListener {
+//                        // Mengubah respons chatbot menjadi suara
+//                        speakText(response)
+//                    }
 
                     // Save the chatbot response to SharedPreferences
                     saveChatMessages()
@@ -137,6 +133,23 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
             }
         }
 
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.action_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.clearButton -> {
+                Toast.makeText(this, "Chat clear", Toast.LENGTH_SHORT).show()
+                chatAdapter.clearMessages() // Menghapus seluruh pesan
+                sharedPreferences.edit().clear().apply() // Menghapus data chat di SharedPreferences
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun getChatbotResponse(message: String, callback: (String) -> Unit) {
@@ -156,7 +169,7 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
 
             override fun onFailure(call: Call<ChatbotResponse>, t: Throwable) {
                 Log.e("CHATBOT_FAILURE", "Failure: ${t.message}")
-                callback("Failure: ${t.message}")
+                callback("Mohon maaf server lagi bad mood")
             }
         })
     }
@@ -188,7 +201,8 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
             Log.d("SPEECH_RESULT", "Spoken text: $spokenText")
 
             // Set the recognized text to the EditText field
-            messageInput.setText(spokenText)
+            val textInput = messageInput.text
+            messageInput.setText(textInput.append(" $spokenText"))
         }
     }
 
@@ -249,5 +263,28 @@ class ChatbotActivity : AppCompatActivity(), OnInitListener {
         chatList.addAll(chatListFromPrefs)
 
         chatAdapter.notifyDataSetChanged()
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_home -> {
+                // Pindah ke chatbot activity
+                startActivity(Intent(this, ChatbotActivity::class.java))
+            }
+            R.id.nav_info -> {
+                // pindah ke information activity
+                startActivity(Intent(this, InformationActivity::class.java))
+            }
+        }
+        drawer_layout.closeDrawer(GravityCompat.START)
+        return true
+    }
+
+    override fun onBackPressed() {
+        if (drawer_layout.isDrawerOpen(GravityCompat.START)) {
+            drawer_layout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
     }
 }

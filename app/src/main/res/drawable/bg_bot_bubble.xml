@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#b5d8d0" />
+    <!-- Warna latar belakang -->
+    <solid android:color="@android:color/transparent" />
+
+    <!-- Sudut membulat -->
     <corners android:radius="16dp" />
+
+    <!-- Margin internal (opsional) -->
+    <padding
+        android:left="8dp"
+        android:top="8dp"
+        android:right="8dp"
+        android:bottom="8dp" />
 </shape>
